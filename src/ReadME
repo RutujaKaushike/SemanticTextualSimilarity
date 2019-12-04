@@ -1,2 +1,4 @@
 Spacy Installation for windows
 python -m spacy download en
+
+Spacy Installation for MacOS: pip install spacy
