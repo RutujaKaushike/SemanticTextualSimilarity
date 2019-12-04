@@ -1,4 +1,3 @@
-Spacy Installation for windows
-python -m spacy download en
-
-Spacy Installation for MacOS: pip install spacy
+Spacy Installation for Windows and MacOS:
+pip install spacy
+python -m spacy download en_core_web_sm
