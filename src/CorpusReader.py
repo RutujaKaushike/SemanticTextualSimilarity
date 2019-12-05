@@ -73,6 +73,7 @@ def main(args):
         first_sents = []
         second_sents = []
         true_score = []
+        next(f)
         for line in f.readlines():
             line_split = line.split('\t')
             id = line_split[0]
@@ -117,6 +118,7 @@ def main(args):
     second_sents = []
     ids = []
     with open(args.testfile,'r',encoding="utf8") as f:
+        next(f)
         for line in f.readlines():
             line_split = line.split('\t')
             id = line_split[0]
