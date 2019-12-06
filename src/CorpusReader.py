@@ -609,7 +609,7 @@ def main(args):
     model2 = AdaBoostClassifier(n_estimators=50,
                                 learning_rate=1)
     # model2.fit(X_features, true_score)
-    model3 = SVR(kernel='linear')
+    # model3 = SVR(kernel='linear')
     # model3.fit(X_features, true_score)
     # from sklearn.externals import joblib
 
@@ -617,7 +617,7 @@ def main(args):
     # joblib.dump(model3, 'model3.pkl')
 
 
-    eclf = VotingClassifier(estimators=[('Random Forest', clf), ('Adaboost', model2), ('SVR', model3)],
+    eclf = VotingClassifier(estimators=[('Random Forest', clf), ('Adaboost', model2)],
                             voting ='soft')
     eclf.fit(X_features, true_score)
 
