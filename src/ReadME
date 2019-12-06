@@ -2,3 +2,8 @@ Spacy Installation for Windows and MacOS:
 pip install spacy
 python -m spacy download en_core_web_sm
 python -m spacy download en_core_web_lg
+
+python CorpusReader.py --pairfile ../data/train-set.txt --testfile ../data/dev-set.txt --predfile ../data/pred-en-test.txt
+
+evaluation.py ../data/dev-set.txt ../data/pred-en-test.txt
+pip install spacy-wordnet
