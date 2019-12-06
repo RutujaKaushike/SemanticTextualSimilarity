@@ -1,6 +1,8 @@
 import difflib
 import pprint
 import argparse
+import string
+
 import sklearn
 from collections import defaultdict
 from nltk.corpus import wordnet_ic
@@ -9,7 +11,7 @@ from googletrans import Translator
 from nltk import pos_tag
 from sklearn.ensemble import RandomForestClassifier, BaggingRegressor, AdaBoostClassifier
 from sklearn.svm import SVR
-from nltk import word_tokenize, pos_tag, WordNetLemmatizer
+from nltk import word_tokenize, pos_tag, WordNetLemmatizer, tag
 from nltk.corpus import wordnet as wn
 import numpy as np
 import spacy
@@ -26,6 +28,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--pairfile', type=str, required=True)
 parser.add_argument('--testfile', type=str, required=True)
 parser.add_argument('--predfile', type=str, required=True)
+lemmatizer = WordNetLemmatizer()
 
 def penn_to_wn(tag):
     """ Convert between a Penn Treebank tag to a simplified Wordnet tag """
@@ -79,7 +82,7 @@ def bag_of_words(sen1, sen2):
     sen1 = sen1.replace(".","")
     sen2 = sen2.replace(".","")
 
-    lemmatizer = WordNetLemmatizer()
+
     words1 = word_tokenize(sen1)
     lemma1 = []
     for w in words1:
@@ -180,6 +183,113 @@ def bag_of_words(sen1, sen2):
 #
 
 
+# def jaccard(s1, s2):
+#     sentence1 = pos_tag(word_tokenize(s1))
+#     sentence2 = pos_tag(word_tokenize(s2))
+#
+#     syn1 = set()
+#     syn2 = set()
+#
+#     for synset in wn.synsets(sentence1):
+#
+#         for lemma in synset.lemmas():
+#
+#             syn1.append(lemma.name())
+#
+#     for synset in wn.synsets(sentence2):
+#
+#         for lemma in synset.lemmas():
+#
+#             syn2.append(lemma.name())
+#
+#     a = len(syn1)
+#     b = len(syn2)
+#     c = syn1.intersection(syn2)
+#     d = len(c)
+#     print(float(d/ (a+b-d)))
+#     return float(d/ (a+b-d))
+#
+
+
+def jaccard_distance(txt1,txt2):
+    v1=[]
+    v2=[]
+    if txt1.get("nsubj") is not None:
+        pos_subj1 = tag.pos_tag([lemmatizer.lemmatize(txt1.get("nsubj"))])
+        syn = [tagged_to_synset(*tagged_word) for tagged_word in pos_subj1]
+        for i in syn:
+            if i is not None:
+                v1.append(i)
+            else:
+                v1.append(txt1.get("nsubj"))
+
+    if txt1.get("dobj") is not None:
+        pos_subj1 = tag.pos_tag([lemmatizer.lemmatize(txt1.get("dobj"))])
+        syn = [tagged_to_synset(*tagged_word) for tagged_word in pos_subj1]
+        for i in syn:
+            if i is not None:
+                v1.append(i)
+            else:
+                v1.append(txt1.get("dobj"))
+
+    if txt1.get("pobj") is not None:
+        pos_subj1 = tag.pos_tag([lemmatizer.lemmatize(txt1.get("pobj"))])
+        syn = [tagged_to_synset(*tagged_word) for tagged_word in pos_subj1]
+        for i in syn:
+            if i is not None:
+                v1.append(i)
+            else:
+                v1.append(txt1.get("pobj"))
+
+    if txt1.get("root") is not None:
+        pos_subj1 = tag.pos_tag([lemmatizer.lemmatize(txt1.get("root"))])
+        syn = [tagged_to_synset(*tagged_word) for tagged_word in pos_subj1]
+        for i in syn:
+            if i is not None:
+                v1.append(i)
+            else:
+                v1.append(txt1.get("root"))
+    if txt2.get("nsubj") is not None:
+        pos_subj2 = tag.pos_tag([lemmatizer.lemmatize(txt2.get("nsubj"))])
+        syn = [tagged_to_synset(*tagged_word) for tagged_word in pos_subj2]
+        for i in syn:
+            if i is not None:
+                v2.append(i)
+            else:
+                v2.append(txt1.get("nsubj"))
+    if txt2.get("dobj") is not None:
+        pos_subj2 = tag.pos_tag([lemmatizer.lemmatize(txt2.get("dobj"))])
+        syn = [tagged_to_synset(*tagged_word) for tagged_word in pos_subj2]
+        for i in syn:
+            if i is not None:
+                v2.append(i)
+            else:
+                v2.append(txt1.get("dobj"))
+
+    if txt2.get("pobj") is not None:
+        pos_subj2 = tag.pos_tag([lemmatizer.lemmatize(txt2.get("pobj"))])
+        syn = [tagged_to_synset(*tagged_word) for tagged_word in pos_subj2]
+        for i in syn:
+            if i is not None:
+                v2.append(i)
+            else:
+                v2.append(txt1.get("pobj"))
+
+    if txt2.get("root") is not None:
+        pos_subj2 = tag.pos_tag([lemmatizer.lemmatize(txt2.get("root"))])
+        syn = [tagged_to_synset(*tagged_word) for tagged_word in pos_subj2]
+        for i in syn:
+            if i is not None:
+                v2.append(i)
+            else:
+                v2.append(txt1.get("root"))
+    # print(v1)
+    # print(v2)
+    intersection = set(v1).intersection(set(v2))
+    union = set(v1).union(set(v2))
+    jd =  len(intersection)/len(union)
+    # print(jd)
+    return jd
 
 def main(args):
     with open(args.pairfile,'r',encoding="utf8") as f:
@@ -221,14 +331,14 @@ def main(args):
         scores = [
                    sentence_similarity_word_alignment(s1,s2),
                     text_similarity(doc1, doc2),
-            parse_similarity(doc1,doc2),
-            bag_of_words(s1, s2)
+            # bag_of_words(s1, s2),
+            parse_similarity(doc1,doc2,s1,s2)
         ]
 
         # cosine similarity
 
         feature_scores.append(scores)
-    print(feature_scores)
+    # print(feature_scores)
     scaler = sklearn.preprocessing.StandardScaler(); scaler.fit(feature_scores);
     X_features = scaler.transform(feature_scores)
     clf = RandomForestClassifier(n_estimators=100)
@@ -269,9 +379,8 @@ def main(args):
         scores = [
                   sentence_similarity_word_alignment(s1,s2),
                   text_similarity(nlp(s1),nlp(s2)),
-            parse_similarity(doc1,doc2),
-            bag_of_words(s1, s2)
-
+            # bag_of_words(s1, s2),
+            parse_similarity(doc1,doc2,s1,s2)
 
             ]
         feature_scores.append(scores)
@@ -328,48 +437,41 @@ def Average(lst):
         average = sum / len(lst)
     return round(average)
 
-def parse_similarity(doc1, doc2):
-    val1={}
-    val2 = {}
+def parse_similarity(doc1, doc2,s1,s2):
+    s1 = s1.translate(str.maketrans('', '', string.punctuation))
+    s2 = s2.translate(str.maketrans('', '', string.punctuation))
+    # s2 = s2.replace(".","")
+    doc1 = nlp(s1)
+    doc2 = nlp(s2)
+    txt1 = {}
+    txt2={}
+    tokenizer = nlp.Defaults.create_tokenizer(nlp)
+    tokens1 = [token.orth_ for token in tokenizer(s1)]
+    tokens2 = [token.orth_ for token in tokenizer(s2)]
+    i=-1
     for token in doc1:
         if(token.dep_=="nsubj"):
-            val1["nsubj"] = token
+            txt1["nsubj"] = tokens1[i]
         elif(token.dep_=="dobj"):
-            val1["dobj"] = token
+            txt1["dobj"] = tokens1[i]
         elif(token.dep_=="pobj"):
-            val1["pobj"] = token
+            txt1["pobj"] = tokens1[i]
         elif(token.dep_=="ROOT"):
-            val1["root"]=token
+            txt1["root"] = tokens1[i]
+    i=-1
     for token in doc2:
+        i +=1
         if(token.dep_=="nsubj"):
-            val2["nsubj"] = token
+            txt2["nsubj"] = tokens2[i]
         elif(token.dep_=="dobj"):
-            val2["dobj"] = token
+            txt2["dobj"] = tokens2[i]
         elif(token.dep_=="pobj"):
-            val2["pobj"] = token
+            txt2["pobj"] = tokens2[i]
         elif(token.dep_=="ROOT"):
-            val2["root"]=token
+            txt2["root"] = tokens2[i]
+    return jaccard_distance(txt1, txt2)
 
-    res =[]
-    if val1.get("nsubj") is not None and val2.get("nsubj") is not None:
-        res.append(val1.get("nsubj").similarity(val2.get("nsubj")))
-    if val1.get("dobj") is not None and val2.get("dobj") is not None:
-        res.append(val1.get("dobj").similarity(val2.get("dobj")))
-    if val1.get("pobj") is not None and val2.get("pobj") is not None:
-        res.append(val1.get("pobj").similarity(val2.get("pobj")))
-    if val1.get("ROOT") is not None and val2.get("ROOT") is not None:
-        res.append(val1.get("ROOT").similarity(val2.get("ROOT")))
 
-    # average = 0
-    # sum = 0
-    # for num in res:
-    #     sum = sum+num;
-    # if len(res) is not 0:
-    #     average = sum / len(res)
-    # return average
-    if(len(res)) is not 0:
-        return max(res)
-    return 0.0
 if __name__ == '__main__':
     args = parser.parse_args()
     pp.pprint(args)
