@@ -42,6 +42,7 @@ def text_similarity(inp_obj1, inp_obj2):
     return inp_obj1.similarity(inp_obj2)
 
 # Feature
+# This feature
 def bag_of_words(sen1, sen2):
     sen1 = sen1.replace(".","")
     sen2 = sen2.replace(".","")
@@ -310,141 +311,98 @@ def clean_sentence(val):
     sentence = " ".join(sentence)
     return sentence
 
-def semanticSimilarity(q1, q2):
+# Feature
+# This feature calculates the wup similarity
+def semanticSimilarity(s1, s2):
 
-    tokens_q1, tokens_q2 = tokenize(q1, q2)
-    # stem_q1, stem_q2 = stemmer(tokens_q1, tokens_q2)
-    tag_q1, tag_q2 = posTag(tokens_q1, tokens_q2)
-
-    sentence = []
-    for i, word in enumerate(tag_q1):
+    s1_tokens, s2_tokens = tokenize(s1, s2)
+    s1_tag, s2_tag = posTag(s1_tokens, s2_tokens)
+    sent = []
+    for index, word in enumerate(s1_tag):
         if 'NN' in word[1] or 'JJ' in word[1] or 'VB' in word[1]:
-            sentence.append(word[0])
-
-    sense1 = Lesk(sentence)
-    sentence1Means = []
-    for word in sentence:
-        sentence1Means.append(sense1.lesk(word, sentence))
-
-    sentence = []
-    for i, word in enumerate(tag_q2):
+            sent.append(word[0])
+    sense1 = Lesk(sent)
+    sentence1Meaning = []
+    for word in sent:
+        sentence1Meaning.append(sense1.lesk(word, sent))
+    sent = []
+    for index, word in enumerate(s2_tag):
         if 'NN' in word[1] or 'JJ' in word[1] or 'VB' in word[1]:
-            sentence.append(word[0])
+            sent.append(word[0])
+    sense2 = Lesk(sent)
+    sentence2Meaning = []
+    for word in sent:
+        sentence2Meaning.append(sense2.lesk(word, sent))
+    Score1 = computePath(sentence1Meaning, sentence2Meaning)
+    Score2 = calculate_wup_similarity(sentence1Meaning, sentence2Meaning)
+    Score = (Score1 + Score2) / 2
+    return calculateSim(sentence1Meaning, sentence2Meaning, Score)
 
-    sense2 = Lesk(sentence)
-    sentence2Means = []
-    for word in sentence:
-        sentence2Means.append(sense2.lesk(word, sentence))
-    # for i, word in enumerate(sentence1Means):
-    #     print sentence1Means[i][0], sentence2Means[i][0]
+def calculateSim(s1, s2, R):
+    x = 0.0
+    y = 0.0
+    for p in range(len(s1)):
+        max_p = 0.0
+        for q in range(len(s2)):
+            if R[p, q] > max_p:
+                max_p = R[p, q]
+        x += max_p
+    for p in range(len(s1)):
+        max_q = 0.0
+        for q in range(len(s2)):
+            if R[p, q] > max_q:
+                max_q = R[p, q]
+        y += max_q
+    if (float(len(s1)) + float(len(s2)))==0.0: return 0.0
+    total =(x + y)/(2*(float(len(s1))+float(len(s2))))
+    return total
 
-    R1 = computePath(sentence1Means, sentence2Means)
-    R2 = computeWup(sentence1Means, sentence2Means)
-
-    R = (R1 + R2) / 2
-
-    # print R
-
-    return overallSim(sentence1Means, sentence2Means, R)
-
-def overallSim(q1, q2, R):
-
-    sum_X = 0.0
-    sum_Y = 0.0
-
-    for i in range(len(q1)):
-        max_i = 0.0
-        for j in range(len(q2)):
-            if R[i, j] > max_i:
-                max_i = R[i, j]
-        sum_X += max_i
-
-    for i in range(len(q1)):
-        max_j = 0.0
-        for j in range(len(q2)):
-            if R[i, j] > max_j:
-                max_j = R[i, j]
-        sum_Y += max_j
-
-    if (float(len(q1)) + float(len(q2))) == 0.0:
-        return 0.0
-
-    overall = (sum_X + sum_Y) / (2 * (float(len(q1)) + float(len(q2))))
-
-    return overall
-
-def computeWup(q1, q2):
-
-    R = np.zeros((len(q1), len(q2)))
-
-    for i in range(len(q1)):
-        for j in range(len(q2)):
-            if q1[i][1] == None or q2[j][1] == None:
-                sim = edit(q1[i][0], q2[j][0])
+def calculate_wup_similarity(s1, s2):
+    res = np.zeros((len(s1), len(s2)))
+    for i in range(len(s1)):
+        for j in range(len(s2)):
+            if s1[i][1] == None or s2[j][1] == None:
+                sim = edit(s1[i][0], s2[j][0])
             else:
-                sim = wup(wn.synset(q1[i][1]), wn.synset(q2[j][1]))
-
+                sim = wup(wn.synset(s1[i][1]), wn.synset(s2[j][1]))
             if sim == None:
-                sim = edit(q1[i][0], q2[j][0])
+                sim = edit(s1[i][0], s2[j][0])
+            res[i, j] = sim
+    return res
 
+def computePath(s1, s2):
+    R = np.zeros((len(s1), len(s2)))
+    for i in range(len(s1)):
+        for j in range(len(s2)):
+            if s1[i][1] == None or s2[j][1] == None:
+                sim = edit(s1[i][0], s2[j][0])
+            else:
+                sim = path(wn.synset(s1[i][1]), wn.synset(s2[j][1]))
+            if sim == None:
+                sim = edit(s1[i][0], s2[j][0])
             R[i, j] = sim
-
-    # print R
-
     return R
 
-def computePath(q1, q2):
+def tokenize(s1, s2):
+    return word_tokenize(s1), word_tokenize(s2)
 
-    R = np.zeros((len(q1), len(q2)))
-
-    for i in range(len(q1)):
-        for j in range(len(q2)):
-            if q1[i][1] == None or q2[j][1] == None:
-                sim = edit(q1[i][0], q2[j][0])
-            else:
-                sim = path(wn.synset(q1[i][1]), wn.synset(q2[j][1]))
-
-            if sim == None:
-                sim = edit(q1[i][0], q2[j][0])
-
-            R[i, j] = sim
-
-    # print R
-
-    return R
-
-def tokenize(q1, q2):
-    """
-        q1 and q2 are sentences/questions. Function returns a list of tokens for both.
-    """
-    return word_tokenize(q1), word_tokenize(q2)
+# Returns Wordnet Pos tag of input sentences
+def posTag(s1, s2):
+    return pos_tag(s1), pos_tag(s2)
 
 
-def posTag(q1, q2):
-    """
-        q1 and q2 are lists. Function returns a list of POS tagged tokens for both.
-    """
-    return pos_tag(q1), pos_tag(q2)
+def stemmer(tag_s1, tag_s2):
+    s1_stem = []
+    s2_stem = []
+    for token in tag_s1:
+        s1_stem.append(stem(token))
 
+    for token in tag_s2:
+        s2_stem.append(stem(token))
 
-def stemmer(tag_q1, tag_q2):
-    """
-        tag_q = tagged lists. Function returns a stemmed list.
-    """
-
-    stem_q1 = []
-    stem_q2 = []
-
-    for token in tag_q1:
-        stem_q1.append(stem(token))
-
-    for token in tag_q2:
-        stem_q2.append(stem(token))
-
-    return stem_q1, stem_q2
+    return s1_stem, s2_stem
 
 class Lesk(object):
-
     def __init__(self, sentence):
         self.sentence = sentence
         self.meanings = {}
@@ -452,34 +410,24 @@ class Lesk(object):
             self.meanings[word] = ''
 
     def getSenses(self, word):
-        # print word
         return wn.synsets(word.lower())
 
     def getGloss(self, senses):
-
         gloss = {}
-
         for sense in senses:
             gloss[sense.name()] = []
-
         for sense in senses:
             gloss[sense.name()] += word_tokenize(sense.definition())
-
         return gloss
 
     def getAll(self, word):
         senses = self.getSenses(word)
-
         if senses == []:
             return {word.lower(): senses}
-
         return self.getGloss(senses)
 
     def Score(self, set1, set2):
-        # Base
         overlap = 0
-
-        # Step
         for word in set1:
             if word in set2:
                 overlap += 1
@@ -487,16 +435,11 @@ class Lesk(object):
         return overlap
 
     def overlapScore(self, word1, word2):
-
         gloss_set1 = self.getAll(word1)
         if self.meanings[word2] == '':
             gloss_set2 = self.getAll(word2)
         else:
-            # print 'here'
             gloss_set2 = self.getGloss([wn.synset(self.meanings[word2])])
-
-        # print gloss_set2
-
         score = {}
         for i in gloss_set1.keys():
             score[i] = 0
@@ -509,7 +452,6 @@ class Lesk(object):
             if score[i] > max_score:
                 max_score = score[i]
                 bestSense = i
-
         return bestSense, max_score
 
     def lesk(self, word, sentence):
@@ -598,7 +540,7 @@ def main(args):
     first_sents = []
     second_sents = []
     ids = []
-    with open(args.testfile,'r',encoding="utf8") as f:
+    with open(args.testfile,'r') as f:
         next(f)
         for line in f.readlines():
             line_split = line.split('\t')
