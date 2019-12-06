@@ -76,6 +76,7 @@ def bag_of_words(sen1, sen2):
         c += vector1[i]*vector2[i]
     cosine = c / float((sum(vector1)*sum(vector2))**0.5)
     print("similarity: ", cosine)
+    return cosine
 
 
 # sen1 = "John likes to watch movies. Mary likes movies too."
